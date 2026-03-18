@@ -8,6 +8,19 @@ I made this app so our 탄이들 (Tannies) can keep you company while monitoring
 
 ---
 
+## 📥 Download
+
+| Platform | Download |
+|----------|----------|
+| **macOS** (Apple Silicon) | [withFave-1.0.0-arm64.dmg](https://github.com/patiencendiligence/withFave/releases/download/v1.0.0/withFave-1.0.0-arm64.dmg) |
+| **Windows** | [withFave Setup 1.0.0.exe](https://github.com/patiencendiligence/withFave/releases/download/v1.0.0/withFave.Setup.1.0.0.exe) |
+
+### Installation
+**macOS**: Download DMG → Open → Drag to Applications  
+**Windows**: Download EXE → Run installer → Follow instructions
+
+---
+
 ## Features
 
 - **Real-time CPU Monitoring**: Your bias reacts to how hard your computer is working
@@ -51,7 +64,9 @@ Now your custom fave will appear alongside the default characters!
 
 ---
 
-## Installation
+## For Developers
+
+### Installation
 
 ```bash
 # Clone the project
@@ -65,7 +80,7 @@ npm install
 npm start
 ```
 
-## Building
+### Building
 
 ```bash
 # Build for macOS
@@ -75,9 +90,7 @@ npm run package:mac
 npm run package:win
 ```
 
----
-
-## Project Structure
+### Project Structure
 
 ```
 withFave/
@@ -93,30 +106,30 @@ withFave/
 │   ├── info.html        # Info/About page
 │   └── styles.css       # Liquid glass styles
 └── assets/
-    └── images/          # BTS member images
+    └── images/          # Character images
 ```
-
----
-
-## Technical Details
-
-- **CPU Measurement**: Uses `systeminformation` library
-- **Smoothing**: Moving average (`prev * 0.7 + current * 0.3`)
-- **Update Interval**: 500ms
-- **Custom Characters**: Stored in localStorage as base64
-
----
-
-## Requirements
-
-- Node.js 18+
-- macOS or Windows
 
 ---
 
 ## Support
 
 If you enjoy this app, consider supporting me on [Ko-fi](https://ko-fi.com/H2H61W7DT8)! ☕
+
+---
+
+## ⚠️ Disclaimer
+
+**This is a non-commercial, fan-made project.**
+
+- This app is created purely for fun and for the ARMY community.
+- **No profit is being made** from this project whatsoever.
+- All BTS-related images and content are the property of **BIGHIT MUSIC / HYBE**.
+- This project is not affiliated with, endorsed by, or connected to BTS or HYBE in any way.
+
+If there are any copyright concerns or issues, please contact me at:  
+📧 **patiencendiligence@gmail.com**
+
+I will respond promptly and take appropriate action.
 
 ---
 
@@ -127,5 +140,3 @@ MIT
 ---
 
 Made with 💜 by an ARMY who develops.
-
-*BTS and all related images are property of BIGHIT MUSIC / HYBE. This is a fan-made project.*
