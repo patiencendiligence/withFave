@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+  <title>withFave Settings</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="settings-body">
+  <div class="settings-container">
+    <header class="settings-header">
+      <h1>❤️ withFave Settings</h1>
+      <p>Choose your favorite character</p>
+    </header>
+
+    <div id="character-grid" class="character-grid">
+      <!-- Character cards will be rendered here -->
+    </div>
+
+    <footer class="settings-footer">
+      <button id="btn-cancel" class="btn btn-secondary">Cancel</button>
+      <button id="btn-add" class="btn btn-accent">+ Add</button>
+      <button id="btn-save" class="btn btn-primary">Save</button>
+    </footer>
+    
+    <!-- Add Character Modal -->
+    <div id="add-modal" class="modal hidden">
+      <div class="modal-content">
+        <h2>Add New Character</h2>
+        <div class="form-group">
+          <label for="char-name">Character Name</label>
+          <input type="text" id="char-name" placeholder="Enter character name" />
+        </div>
+        <p class="form-hint">Upload 4 images (200x200px recommended)</p>
+        <div class="image-upload-grid">
+          <div class="image-upload-item" data-emotion="calm">
+            <input type="file" id="img-calm" accept="image/*" hidden />
+            <label for="img-calm" class="upload-label">
+              <span class="upload-icon">+</span>
+              <span class="emotion-name">Calm</span>
+            </label>
+            <img class="preview-img hidden" />
+          </div>
+          <div class="image-upload-item" data-emotion="normal">
+            <input type="file" id="img-normal" accept="image/*" hidden />
+            <label for="img-normal" class="upload-label">
+              <span class="upload-icon">+</span>
+              <span class="emotion-name">Normal</span>
+            </label>
+            <img class="preview-img hidden" />
+          </div>
+          <div class="image-upload-item" data-emotion="excited">
+            <input type="file" id="img-excited" accept="image/*" hidden />
+            <label for="img-excited" class="upload-label">
+              <span class="upload-icon">+</span>
+              <span class="emotion-name">Excited</span>
+            </label>
+            <img class="preview-img hidden" />
+          </div>
+          <div class="image-upload-item" data-emotion="stressed">
+            <input type="file" id="img-stressed" accept="image/*" hidden />
+            <label for="img-stressed" class="upload-label">
+              <span class="upload-icon">+</span>
+              <span class="emotion-name">Stressed</span>
+            </label>
+            <img class="preview-img hidden" />
+          </div>
+        </div>
+        <div class="modal-buttons">
+          <button id="modal-cancel" class="btn btn-secondary">Cancel</button>
+          <button id="modal-save" class="btn btn-primary">Register</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="settings.js"></script>
+</body>
+</html>
