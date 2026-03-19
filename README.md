@@ -12,7 +12,7 @@ I made this app so our 탄이들 (Tannies) can keep you company while monitoring
 
 | Platform | Download |
 |----------|----------|
-| **macOS** (Apple Silicon) | [withFave-1.0.0-arm64.dmg](https://github.com/patiencendiligence/withFave/releases/download/v1.0.0/withFave-1.0.0-arm64.dmg) |
+| **macOS** (Apple Silicon) | preparing |
 | **Windows** | [withFave Setup 1.0.0.exe](https://github.com/patiencendiligence/withFave/releases/download/v1.0.0/withFave.Setup.1.0.0.exe) |
 
 ### Installation
