@@ -64,31 +64,6 @@ Now your custom fave will appear alongside the default characters!
 
 ---
 
-## For Developers
-
-### Installation
-
-```bash
-# Clone the project
-git clone https://github.com/patiencendiligence/withFave.git
-cd withFave
-
-# Install dependencies
-npm install
-
-# Run the app
-npm start
-```
-
-### Building
-
-```bash
-# Build for macOS
-npm run package:mac
-
-# Build for Windows
-npm run package:win
-```
 
 ### Project Structure
 
