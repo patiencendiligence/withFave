@@ -8,7 +8,9 @@
     "dev": "electron . --enable-logging",
     "package:mac": "electron-builder --mac",
     "package:win": "electron-builder --win",
-    "package": "electron-builder --mac --win"
+    "package:win:portable": "electron-builder --win portable",
+    "package": "electron-builder --mac --win",
+    "release": "electron-builder --mac --win -p always"
   },
   "keywords": [
     "electron",
@@ -31,10 +33,29 @@
     "productName": "withFave",
     "mac": {
       "category": "public.app-category.utilities",
-      "icon": "assets/icon.icns"
+      "icon": "assets/icon.icns",
+      "target": ["dmg", "zip"]
     },
     "win": {
-      "icon": "assets/icon.ico"
+      "icon": "assets/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": true
+    },
+    "portable": {
+      "artifactName": "${productName}-Portable-${version}.${ext}"
     },
     "files": [
       "main.js",
@@ -42,6 +63,11 @@
       "system/**/*",
       "renderer/**/*",
       "assets/**/*"
-    ]
+    ],
+    "publish": {
+      "provider": "github",
+      "owner": "patiencendiligence",
+      "repo": "withFave"
+    }
   }
 }
