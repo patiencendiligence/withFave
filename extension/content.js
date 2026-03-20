@@ -1,303 +1,276 @@
-const EMOTIONS = ['CALM', 'NORMAL', 'EXCITED', 'STRESSED'];
-const EMOTION_CLASS = ['', 'normal', 'excited', 'stressed'];
-const MEMBERS = { j:'JIN', s:'SUGA', r:'RM', jh:'J-HOPE', jm:'JIMIN', v:'V', jk:'JUNGKOOK' };
-
-let widget = null;
-let member = 'jk';
-let emotion = 0;
-let customs = {};
-let isDragging = false;
-let dragOffset = { x: 0, y: 0 };
-let uploadedImgs = [null, null, null, null];
-
-async function init() {
-  const data = await chrome.storage.local.get(['selectedMember', 'emotion', 'visible', 'position', 'customCharacters']);
-  member = data.selectedMember || 'jk';
-  emotion = data.emotion || 0;
-  customs = data.customCharacters || {};
+// withFave Content Script
+(function() {
+  'use strict';
   
-  createWidget();
+  console.log('[withFave] Content script running...');
   
-  if (data.visible === false) {
-    widget.classList.add('hidden');
+  if (document.getElementById('wf-widget')) {
+    console.log('[withFave] Widget already exists');
+    return;
   }
   
-  console.log('[withFave] Widget initialized', { member, emotion, visible: data.visible });
+  console.log('[withFave] Creating widget...');
   
-  if (data.position) {
-    widget.style.right = 'auto';
-    widget.style.bottom = 'auto';
-    widget.style.left = data.position.x + 'px';
-    widget.style.top = data.position.y + 'px';
-  }
+  const LABELS = ['CALM', 'NORMAL', 'EXCITED', 'STRESSED'];
+  const CLASSES = ['', 'normal', 'excited', 'stressed'];
+  const MEMBERS = ['jk', 'v', 'jm', 'jh', 'r', 's', 'j'];
+  const MEMBER_NAMES = ['정국', '뷔', '지민', '제이홉', 'RM', '슈가', '진'];
   
-  updateWidget();
-}
-
-function createWidget() {
-  widget = document.createElement('div');
-  widget.id = 'withfave-widget';
-  widget.style.right = '20px';
-  widget.style.bottom = '20px';
+  let emotion = 1, memberIdx = 0;
+  let customs = {};
+  let currentCustomKey = null;
+  let uploadedImgs = [null, null, null, null];
   
+  // 저장된 커스텀 캐릭터 불러오기
+  chrome.storage.local.get(['customCharacters', 'selectedMember'], (data) => {
+    customs = data.customCharacters || {};
+    if (data.selectedMember && data.selectedMember.startsWith('c_')) {
+      currentCustomKey = data.selectedMember;
+    }
+  });
+  
+  const widget = document.createElement('div');
+  widget.id = 'wf-widget';
   widget.innerHTML = `
-    <div class="wf-container">
-      <div class="wf-nav">
-        <button class="wf-btn-settings" title="Settings">⚙️</button>
-        <button class="wf-btn-info" title="Info">ℹ️</button>
-      </div>
-      <button class="wf-close" title="Hide">×</button>
-      <img class="wf-char" src="${chrome.runtime.getURL('images/jk0.png')}" draggable="false">
-      <span class="wf-emotion">CALM</span>
+    <div id="wf-nav">
+      <button id="wf-btn-settings" title="Settings">⚙️</button>
+      <button id="wf-btn-info" title="Info">ℹ️</button>
     </div>
-    <div class="wf-panel wf-settings-panel">
-      <div class="wf-grid"></div>
-      <button class="wf-add-btn">+ Add</button>
+    <button id="wf-close">×</button>
+    <img id="wf-img" src="${chrome.runtime.getURL('images/jk1.png')}" draggable="false">
+    <span id="wf-label" class="normal">NORMAL</span>
+    
+    <div id="wf-panel-settings" class="wf-panel">
+      <div id="wf-grid"></div>
+      <button id="wf-add-btn">+ 캐릭터 추가</button>
     </div>
-    <div class="wf-panel wf-info-panel">
-      <div class="wf-info">
-        <p>Tabs: <b id="wf-tabs">0</b></p>
-        <p>😌≤5 🙂≤15 😄≤30 😤30+</p>
-        <a href="https://ko-fi.com/H2H61W7DT8" target="_blank">☕ Support</a>
-      </div>
+    
+    <div id="wf-panel-info" class="wf-panel">
+      <p>클릭: 감정 변경</p>
+      <p>더블클릭: 멤버 변경</p>
+      <p style="margin-top:8px;font-size:9px;opacity:0.7">Made with 💜 by ARMY</p>
+      <a href="https://ko-fi.com/H2H61W7DT8" target="_blank" id="wf-kofi">☕ Ko-fi</a>
     </div>
-    <div class="wf-modal wf-hidden">
+    
+    <div id="wf-modal" class="wf-modal">
       <div class="wf-modal-box">
-        <input type="text" class="wf-input" placeholder="Character name">
-        <div class="wf-img-grid">
+        <input type="text" id="wf-char-name" placeholder="캐릭터 이름">
+        <div id="wf-img-grid">
           <label data-i="0"><input type="file" accept="image/*" hidden>😌<img class="wf-pv"></label>
           <label data-i="1"><input type="file" accept="image/*" hidden>🙂<img class="wf-pv"></label>
           <label data-i="2"><input type="file" accept="image/*" hidden>😄<img class="wf-pv"></label>
           <label data-i="3"><input type="file" accept="image/*" hidden>😤<img class="wf-pv"></label>
         </div>
         <div class="wf-modal-btns">
-          <button class="wf-modal-cancel">✕</button>
-          <button class="wf-modal-save">✓</button>
+          <button id="wf-modal-cancel">취소</button>
+          <button id="wf-modal-save">추가</button>
         </div>
       </div>
     </div>
   `;
-  
   document.body.appendChild(widget);
+  console.log('[withFave] Widget added to page!');
   
-  setupDrag();
-  setupEvents();
-  renderGrid();
-}
-
-function setupDrag() {
-  const container = widget.querySelector('.wf-container');
+  const img = document.getElementById('wf-img');
+  const label = document.getElementById('wf-label');
+  const grid = document.getElementById('wf-grid');
+  const panelSettings = document.getElementById('wf-panel-settings');
+  const panelInfo = document.getElementById('wf-panel-info');
+  const modal = document.getElementById('wf-modal');
   
-  container.addEventListener('mousedown', (e) => {
-    if (e.target.tagName === 'BUTTON') return;
-    isDragging = true;
-    const rect = widget.getBoundingClientRect();
-    dragOffset.x = e.clientX - rect.left;
-    dragOffset.y = e.clientY - rect.top;
-    widget.style.right = 'auto';
-    widget.style.bottom = 'auto';
-  });
+  // 그리드 렌더링
+  function renderGrid() {
+    grid.innerHTML = '';
+    
+    // 기본 멤버
+    MEMBERS.forEach((m, i) => {
+      const card = document.createElement('div');
+      card.className = 'wf-card' + (!currentCustomKey && i === memberIdx ? ' sel' : '');
+      card.innerHTML = `<img src="${chrome.runtime.getURL(`images/${m}1.png`)}">`;
+      card.title = MEMBER_NAMES[i];
+      card.addEventListener('click', (e) => {
+        e.stopPropagation();
+        memberIdx = i;
+        currentCustomKey = null;
+        chrome.storage.local.set({ selectedMember: m });
+        updateWidget();
+        renderGrid();
+      });
+      grid.appendChild(card);
+    });
+    
+    // 커스텀 캐릭터
+    Object.keys(customs).forEach(key => {
+      const c = customs[key];
+      const card = document.createElement('div');
+      card.className = 'wf-card' + (currentCustomKey === key ? ' sel' : '');
+      card.innerHTML = `<button class="wf-del">×</button><img src="${c.images[1]}">`;
+      card.title = c.name;
+      card.addEventListener('click', (e) => {
+        if (e.target.classList.contains('wf-del')) return;
+        e.stopPropagation();
+        currentCustomKey = key;
+        chrome.storage.local.set({ selectedMember: key });
+        updateWidget();
+        renderGrid();
+      });
+      card.querySelector('.wf-del').addEventListener('click', (e) => {
+        e.stopPropagation();
+        delete customs[key];
+        chrome.storage.local.set({ customCharacters: customs });
+        if (currentCustomKey === key) {
+          currentCustomKey = null;
+          memberIdx = 0;
+        }
+        updateWidget();
+        renderGrid();
+      });
+      grid.appendChild(card);
+    });
+  }
   
-  document.addEventListener('mousemove', (e) => {
-    if (!isDragging) return;
-    const x = e.clientX - dragOffset.x;
-    const y = e.clientY - dragOffset.y;
-    widget.style.left = x + 'px';
-    widget.style.top = y + 'px';
-  });
-  
-  document.addEventListener('mouseup', () => {
-    if (isDragging) {
-      isDragging = false;
-      const rect = widget.getBoundingClientRect();
-      chrome.storage.local.set({ position: { x: rect.left, y: rect.top } });
-    }
-  });
-}
-
-function setupEvents() {
-  widget.querySelector('.wf-close').addEventListener('click', () => {
-    widget.classList.add('hidden');
-    chrome.storage.local.set({ visible: false });
-  });
-  
-  widget.querySelector('.wf-char').addEventListener('click', () => {
-    emotion = (emotion + 1) % 4;
-    chrome.storage.local.set({ emotion });
-    updateWidget();
-  });
-  
-  widget.querySelector('.wf-btn-settings').addEventListener('click', (e) => {
+  // 패널 토글
+  document.getElementById('wf-btn-settings').addEventListener('click', (e) => {
     e.stopPropagation();
-    togglePanel('settings');
+    panelInfo.classList.remove('show');
+    panelSettings.classList.toggle('show');
+    if (panelSettings.classList.contains('show')) renderGrid();
   });
   
-  widget.querySelector('.wf-btn-info').addEventListener('click', (e) => {
+  document.getElementById('wf-btn-info').addEventListener('click', (e) => {
     e.stopPropagation();
-    togglePanel('info');
+    panelSettings.classList.remove('show');
+    panelInfo.classList.toggle('show');
   });
   
-  widget.querySelector('.wf-add-btn').addEventListener('click', (e) => {
+  // 캐릭터 추가 모달
+  document.getElementById('wf-add-btn').addEventListener('click', (e) => {
     e.stopPropagation();
     openModal();
   });
   
-  widget.querySelector('.wf-modal-cancel').addEventListener('click', closeModal);
-  widget.querySelector('.wf-modal-save').addEventListener('click', saveCustomChar);
+  document.getElementById('wf-modal-cancel').addEventListener('click', closeModal);
+  document.getElementById('wf-modal-save').addEventListener('click', saveCustom);
   
-  widget.querySelectorAll('.wf-img-grid label').forEach((label, i) => {
-    const input = label.querySelector('input');
-    input.addEventListener('change', (e) => handleImgUpload(e, i));
+  document.querySelectorAll('#wf-img-grid label').forEach((lbl, i) => {
+    lbl.querySelector('input').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = 150;
+        canvas.getContext('2d').drawImage(img, 0, 0, 150, 150);
+        const data = canvas.toDataURL('image/jpeg', 0.7);
+        uploadedImgs[i] = data;
+        
+        const pv = lbl.querySelector('.wf-pv');
+        pv.src = data;
+        pv.style.display = 'block';
+        lbl.classList.add('has');
+      };
+      img.src = URL.createObjectURL(file);
+    });
   });
   
+  function openModal() {
+    uploadedImgs = [null, null, null, null];
+    document.getElementById('wf-char-name').value = '';
+    document.querySelectorAll('#wf-img-grid label').forEach(l => {
+      l.classList.remove('has');
+      l.querySelector('.wf-pv').style.display = 'none';
+    });
+    modal.classList.add('show');
+  }
+  
+  function closeModal() {
+    modal.classList.remove('show');
+  }
+  
+  function saveCustom() {
+    const name = document.getElementById('wf-char-name').value.trim();
+    if (!name) return alert('이름을 입력하세요');
+    if (uploadedImgs.some(x => !x)) return alert('4개 이미지를 모두 업로드하세요');
+    
+    const key = 'c_' + Date.now();
+    customs[key] = { name, images: [...uploadedImgs] };
+    
+    chrome.storage.local.set({ customCharacters: customs }, () => {
+      currentCustomKey = key;
+      chrome.storage.local.set({ selectedMember: key });
+      closeModal();
+      updateWidget();
+      renderGrid();
+    });
+  }
+  
+  // 드래그
+  let dragging = false, startX = 0, startY = 0;
+  widget.addEventListener('mousedown', e => {
+    if (e.target.closest('#wf-nav') || e.target.id === 'wf-close' || e.target.closest('.wf-panel') || e.target.closest('.wf-modal')) return;
+    dragging = true;
+    const rect = widget.getBoundingClientRect();
+    startX = e.clientX - rect.left;
+    startY = e.clientY - rect.top;
+  });
+  
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    widget.classList.add('dragged');
+    widget.style.left = (e.clientX - startX) + 'px';
+    widget.style.top = (e.clientY - startY) + 'px';
+  });
+  
+  document.addEventListener('mouseup', () => { dragging = false; });
+  
+  // 패널 외부 클릭시 닫기
   document.addEventListener('click', (e) => {
     if (!widget.contains(e.target)) {
-      closeAllPanels();
+      panelSettings.classList.remove('show');
+      panelInfo.classList.remove('show');
     }
   });
-}
-
-function openModal() {
-  uploadedImgs = [null, null, null, null];
-  widget.querySelector('.wf-input').value = '';
-  widget.querySelectorAll('.wf-img-grid label').forEach(l => {
-    l.classList.remove('has');
-    l.querySelector('.wf-pv').style.display = 'none';
-  });
-  widget.querySelector('.wf-modal').classList.remove('wf-hidden');
-}
-
-function closeModal() {
-  widget.querySelector('.wf-modal').classList.add('wf-hidden');
-}
-
-function handleImgUpload(e, i) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    uploadedImgs[i] = ev.target.result;
-    const label = widget.querySelector(`.wf-img-grid label[data-i="${i}"]`);
-    const pv = label.querySelector('.wf-pv');
-    pv.src = ev.target.result;
-    pv.style.display = 'block';
-    label.classList.add('has');
-  };
-  reader.readAsDataURL(file);
-}
-
-function saveCustomChar() {
-  const name = widget.querySelector('.wf-input').value.trim();
-  if (!name) return alert('Enter name');
-  if (uploadedImgs.some(x => !x)) return alert('Upload all 4 images');
   
-  const key = 'c_' + Date.now();
-  customs[key] = { name, images: uploadedImgs };
-  chrome.storage.local.set({ customCharacters: customs });
-  
-  member = key;
-  chrome.storage.local.set({ selectedMember: key });
-  
-  closeModal();
-  renderGrid();
-  updateWidget();
-}
-
-function togglePanel(type) {
-  const panel = widget.querySelector(`.wf-${type}-panel`);
-  const isOpen = panel.classList.contains('show');
-  
-  closeAllPanels();
-  
-  if (!isOpen) {
-    panel.classList.add('show');
-    if (type === 'info') updateTabCount();
-  }
-}
-
-function closeAllPanels() {
-  widget.querySelectorAll('.wf-panel').forEach(p => p.classList.remove('show'));
-}
-
-async function updateTabCount() {
-  const tabs = await chrome.tabs.query({});
-  const el = widget.querySelector('#wf-tabs');
-  if (el) el.textContent = tabs.length;
-}
-
-function renderGrid() {
-  const grid = widget.querySelector('.wf-grid');
-  grid.innerHTML = '';
-  
-  Object.keys(MEMBERS).forEach(k => {
-    const card = document.createElement('div');
-    card.className = `wf-card${k === member ? ' sel' : ''}`;
-    card.innerHTML = `<img src="${chrome.runtime.getURL(`images/${k}1.png`)}">`;
-    card.addEventListener('click', () => selectMember(k));
-    grid.appendChild(card);
+  // 닫기
+  document.getElementById('wf-close').addEventListener('click', () => {
+    widget.style.display = 'none';
   });
   
-  Object.keys(customs).forEach(k => {
-    const card = document.createElement('div');
-    card.className = `wf-card${k === member ? ' sel' : ''}`;
-    card.innerHTML = `<button class="wf-del">×</button><img src="${customs[k].images[1]}">`;
-    card.addEventListener('click', (e) => {
-      if (!e.target.classList.contains('wf-del')) selectMember(k);
-    });
-    card.querySelector('.wf-del').addEventListener('click', (e) => {
-      e.stopPropagation();
-      delete customs[k];
-      chrome.storage.local.set({ customCharacters: customs });
-      if (member === k) { member = 'jk'; chrome.storage.local.set({ selectedMember: 'jk' }); }
-      renderGrid();
-      updateWidget();
-    });
-    grid.appendChild(card);
-  });
-}
-
-function selectMember(k) {
-  member = k;
-  chrome.storage.local.set({ selectedMember: k });
-  renderGrid();
-  updateWidget();
-}
-
-function updateWidget() {
-  const img = widget.querySelector('.wf-char');
-  if (customs[member]) {
-    img.src = customs[member].images[emotion];
-  } else {
-    img.src = chrome.runtime.getURL(`images/${member}${emotion}.png`);
-  }
-  
-  const label = widget.querySelector('.wf-emotion');
-  label.textContent = EMOTIONS[emotion];
-  label.className = 'wf-emotion ' + EMOTION_CLASS[emotion];
-}
-
-chrome.runtime.onMessage.addListener((msg) => {
-  if (msg.action === 'toggle' && widget) {
-    widget.classList.toggle('hidden');
-  }
-});
-
-chrome.storage.onChanged.addListener((changes) => {
-  if (changes.emotion && widget) {
-    emotion = changes.emotion.newValue;
+  // 클릭 → 감정 변경
+  img.addEventListener('click', () => {
+    emotion = (emotion + 1) % 4;
     updateWidget();
-  }
-  if (changes.visible && widget) {
-    if (changes.visible.newValue) {
-      widget.classList.remove('hidden');
+  });
+  
+  // 더블클릭 → 멤버 변경
+  img.addEventListener('dblclick', () => {
+    if (currentCustomKey) {
+      const keys = Object.keys(customs);
+      const idx = keys.indexOf(currentCustomKey);
+      if (idx === keys.length - 1) {
+        currentCustomKey = null;
+        memberIdx = 0;
+      } else {
+        currentCustomKey = keys[idx + 1];
+      }
     } else {
-      widget.classList.add('hidden');
+      memberIdx = (memberIdx + 1) % MEMBERS.length;
+      if (memberIdx === 0 && Object.keys(customs).length > 0) {
+        currentCustomKey = Object.keys(customs)[0];
+      }
     }
+    updateWidget();
+    if (panelSettings.classList.contains('show')) renderGrid();
+  });
+  
+  function updateWidget() {
+    if (currentCustomKey && customs[currentCustomKey]) {
+      img.src = customs[currentCustomKey].images[emotion];
+    } else {
+      img.src = chrome.runtime.getURL(`images/${MEMBERS[memberIdx]}${emotion}.png`);
+    }
+    label.textContent = LABELS[emotion];
+    label.className = CLASSES[emotion];
   }
-});
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
-} else {
-  init();
-}
+})();
