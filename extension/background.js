@@ -8,9 +8,14 @@ chrome.runtime.onInstalled.addListener(() => {
 
 chrome.action.onClicked.addListener(async (tab) => {
   const { visible } = await chrome.storage.local.get('visible');
-  chrome.storage.local.set({ visible: !visible });
+  const newVisible = !visible;
+  chrome.storage.local.set({ visible: newVisible });
   
-  chrome.tabs.sendMessage(tab.id, { action: 'toggle' });
+  try {
+    await chrome.tabs.sendMessage(tab.id, { action: 'toggle' });
+  } catch (e) {
+    // Content script not loaded on this tab, ignore
+  }
 });
 
 chrome.tabs.onCreated.addListener(updateEmotion);

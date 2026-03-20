@@ -22,6 +22,8 @@ async function init() {
     widget.classList.add('hidden');
   }
   
+  console.log('[withFave] Widget initialized', { member, emotion, visible: data.visible });
+  
   if (data.position) {
     widget.style.right = 'auto';
     widget.style.bottom = 'auto';
@@ -275,15 +277,22 @@ function updateWidget() {
 }
 
 chrome.runtime.onMessage.addListener((msg) => {
-  if (msg.action === 'toggle') {
+  if (msg.action === 'toggle' && widget) {
     widget.classList.toggle('hidden');
   }
 });
 
 chrome.storage.onChanged.addListener((changes) => {
-  if (changes.emotion) {
+  if (changes.emotion && widget) {
     emotion = changes.emotion.newValue;
     updateWidget();
+  }
+  if (changes.visible && widget) {
+    if (changes.visible.newValue) {
+      widget.classList.remove('hidden');
+    } else {
+      widget.classList.add('hidden');
+    }
   }
 });
 
